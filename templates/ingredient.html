@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Ingrédient{% endblock %}
+
+{% block style %}
+<style>
+.preview_background {
+  background-image:
+    repeating-linear-gradient(
+      -45deg,
+      #0000ff,
+      #0000ff 1rem,
+      #3333ff 1rem,
+      #3333ff 2rem
+    );
+  background-size: 200% 200%;
+  animation: barberpole 100s linear infinite;
+}
+
+.preview_label {
+text-align: center;
+height: 100%;
+align-content: end;
+}
+
+@keyframes barberpole {
+  100% {
+    background-position: 100% 100%;
+  }
+}
+</style>
+{% endblock %}
+
+{% block script %}
+<script>
+  function changeColor() {
+    const el = document.getElementById("preview_background");
+    const main = document.getElementById("main_color");
+    const secondary = document.getElementById("secondary_color");
+
+    el.style.backgroundImage = `
+    repeating-linear-gradient(
+      -45deg,
+      ${main.value},
+      ${main.value} 1rem,
+      ${secondary.value} 1rem,
+      ${secondary.value} 2rem
+    )
+    `;
+  }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="grid">
+  <div>
+    <form method="post">
+      <fieldset>
+        <label>
+          Nom de l'ingrédient
+          <input
+                  name="name"
+                  placeholder="Eau"
+                  oninput="preview_label.innerText = this.value;"
+          />
+        </label>
+        <label>
+          Couleur principal de l'ingrédient
+          <input
+                  name="main_color"
+                  id="main_color"
+                  type="color"
+                  value="#0000ff"
+                  oninput="changeColor()"
+          >
+        </label>
+        <label>
+          Couleur secondaire de l'ingrédient
+          <input
+                  name="secondary_color"
+                  id="secondary_color"
+                  type="color"
+                  value="#3333ff"
+                  oninput="changeColor()"
+          >
+        </label>
+        <label>
+          Teneur en alcool (%)
+          <input
+                  name="alcool"
+                  type="number"
+                  aria-describedby="alcool_helper"
+          >
+          <small id="alcool_helper">0 pour les ingrédients non-alcoolisé</small>
+        </label>
+      </fieldset>
+
+      <input
+              type="submit"
+              value="Créer"
+      >
+    </form>
+  </div>
+  <div>
+    <div style="aspect-ratio: 1; width: 100%;" class="preview_background" id="preview_background">
+      <p class="preview_label" id="preview_label">Eau</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
