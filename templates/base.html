@@ -3,18 +3,21 @@
 <head>
   {% block head %}
   <link rel="stylesheet" href="static/css/pico.orange.min.css" />
+  <link rel="stylesheet" href="static/css/pico.colors.min.css" />
   <title>{% block title %}{% endblock %} - Drink||!</title>
   {% block style %}{% endblock %}
   {% block script %}{% endblock %}
   {% endblock %}
 </head>
-<body class="container">
+<body>
 {% include 'topbar.html' %}
+<main class="container">
 <div id="content">{% block content %}{% endblock %}</div>
 <div id="footer">
   {% block footer %}
   &copy; Copyright 2026 par <a href="https://youtu.be/dQw4w9WgXcQ">voir</a>.
   {% endblock %}
 </div>
+</main>
 </body>
 </html>
