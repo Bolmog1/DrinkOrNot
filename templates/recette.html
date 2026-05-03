@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+
+{% block title %}Créer une Recette{% endblock %}
+
+{% block style %}
+<style>
+    /* ── Shaker Preview ─────────────────────────────── */
+    .shaker-wrap {
+        position: sticky;
+        top: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .shaker-outer {
+        position: relative;
+        width: 140px;
+        height: 320px;
+        margin: 0 auto;
+        filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
+    }
+
+    /* SVG shaker clip path */
+    .shaker-svg {
+        position: absolute;
+        opacity: 20%;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 3;
+        pointer-events: none;
+    }
+
+    .shaker-liquid-container {
+        clip-path: url(#myClip);
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
+
+    .liquid-layer {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transition: height .6s cubic-bezier(.4,0,.2,1);
+        background-size: 200% 200%;
+        animation: barberpole 20s linear infinite;
+    }
+
+    @keyframes barberpole {
+        100% { background-position: 100% 100%; }
+    }
+
+    .shaker-empty-msg {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,.3);
+        font-size: .75rem;
+        text-align: center;
+        padding: .5rem;
+        pointer-events: none;
+    }
+
+    /* cocktail name under shaker */
+    .cocktail-name-preview {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-align: center;
+        min-height: 1.5rem;
+        color: var(--pico-primary);
+        text-transform: uppercase;
+    }
+
+    .persons-preview {
+        font-size: .8rem;
+        text-align: center;
+        color: var(--pico-muted-color);
+    }
+
+    /* ── Alcohol warning ────────────────────────────── */
+    .alcohol-warning {
+        display: none;
+        padding: .5rem .75rem;
+        border-radius: var(--pico-border-radius);
+        border-left: 3px solid var(--pico-color-amber-500, #f59e0b);
+        background: color-mix(in srgb, var(--pico-color-amber-500, #f59e0b) 10%, transparent);
+        font-size: .8rem;
+        color: var(--pico-color-amber-200, #fcd34d);
+        margin-top: .5rem;
+    }
+    .alcohol-warning.visible { display: block; }
+
+    /* ── Ingredient rows ─────────────────────────────── */
+    .ingredient-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: .5rem;
+        align-items: end;
+        margin-bottom: .75rem;
+        padding: .75rem;
+        border-radius: var(--pico-border-radius);
+        border: 1px solid var(--pico-muted-border-color);
+        position: relative;
+        transition: border-color .2s;
+    }
+    .ingredient-row:hover {
+        border-color: var(--pico-primary);
+    }
+
+    .ingredient-row .color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    .ingredient-row select,
+    .ingredient-row input[type="number"] {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .remove-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--pico-muted-color);
+        padding: .25rem;
+        line-height: 1;
+        font-size: 1.1rem;
+        transition: color .2s;
+        align-self: center;
+        margin-bottom: 0;
+    }
+    .remove-btn:hover { color: var(--pico-del-color, #e74c3c); }
+
+    .unit-select {
+        width: auto;
+        min-width: 130px;
+    }
+
+    /* ── Legend / summary ───────────────────────────── */
+    .recipe-summary {
+        font-size: .82rem;
+        color: var(--pico-muted-color);
+        border-top: 1px solid var(--pico-muted-border-color);
+        padding-top: .5rem;
+        margin-top: .5rem;
+    }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 768px) {
+        .ingredient-row {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block script %}
+<script>
+    /* ── Ingredient data from Twig ─────────────────── */
+    const INGREDIENTS = {{ ingredients | safe }};
+    /*
+    Expected structure from backend:
+    [
+      { id: 1, name: "Rhum", main_color: "#a05c20", secondary_color: "#c47a35", alcool: 40 },
+      { id: 2, name: "Citron vert", main_color: "#84cc16", secondary_color: "#a3e635", alcool: 0 },
+      ...
+    ]
+    */
+
+    /* ── Unit conversions to ml ─────────────────────── */
+    const UNIT_CONVERSIONS = {
+        ml:       1,
+        cl:       10,
+        tsp:      5,       // cuillère à café
+        tbsp:     15,      // cuillère à soupe
+        oz:       29.5735,
+        cup:      240,     // verre (250ml approx → using 240 standard)
+        dash:     0.9,
+    };
+
+    const UNIT_LABELS = {
+        ml:   "ml",
+        cl:   "cl",
+        tsp:  "c. à café (5 ml)",
+        tbsp: "c. à soupe (15 ml)",
+        oz:   "oz (29.6 ml)",
+        cup:  "verre (240 ml)",
+        dash: "dash (0.9 ml)",
+    };
+
+    let rows = [];   // { ingredientId, amount, unit }
+
+    /* ── Helpers ───────────────────────────────────── */
+    function toMl(amount, unit) {
+        return parseFloat(amount || 0) * (UNIT_CONVERSIONS[unit] || 1);
+    }
+
+    function getIngredient(id) {
+        return INGREDIENTS.find(i => i.id == id);
+    }
+
+    function totalMl() {
+        return rows.reduce((s, r) => s + toMl(r.amount, r.unit), 0);
+    }
+
+    function hasAlcohol() {
+        return rows.some(r => {
+            const ing = getIngredient(r.ingredientId);
+            return ing && ing.alcool > 0 && parseFloat(r.amount || 0) > 0;
+        });
+    }
+
+    /* ── Render shaker preview ─────────────────────── */
+    function renderShaker() {
+        const container = document.getElementById('shaker-liquid-container');
+        const emptyMsg = document.getElementById('shaker-empty-msg');
+        const total = totalMl();
+
+        // Clear existing layers
+        container.querySelectorAll('.liquid-layer').forEach(el => el.remove());
+
+        if (total <= 0 || rows.every(r => !parseFloat(r.amount || 0))) {
+            emptyMsg.style.display = 'flex';
+            return;
+        }
+        emptyMsg.style.display = 'none';
+
+        // Max fill ~90% of container
+        const maxFillPct = 100;
+        // Layers stacked bottom-to-top
+        let cumulative = 0;
+        rows.slice().reverse().forEach(r => {
+            const ml = toMl(r.amount, r.unit);
+            if (ml <= 0) return;
+            const ing = getIngredient(r.ingredientId);
+            if (!ing) return;
+            const pct = (ml / total) * maxFillPct;
+            cumulative += pct;
+
+            const layer = document.createElement('div');
+            layer.className = 'liquid-layer';
+            layer.style.height = pct + '%';
+            layer.style.backgroundImage = `
+      repeating-linear-gradient(
+        -45deg,
+        ${ing.couleur1},
+        ${ing.couleur1} 1rem,
+        ${ing.couleur2} 1rem,
+        ${ing.couleur2} 2rem
+      )`;
+            container.appendChild(layer);
+        });
+
+        // Update total fill height visual — layers are stacked, height already correct
+    }
+
+    /* ── Render alcohol warning ─────────────────────── */
+    function renderWarning() {
+        document.getElementById('alcohol-warning').classList.toggle('visible', hasAlcohol());
+    }
+
+    /* ── Render cocktail name ─────────────────────────*/
+    function renderName() {
+        const val = document.getElementById('cocktail-name').value;
+        document.getElementById('cocktail-name-preview').textContent = val || '—';
+    }
+
+    /* ── Render persons ─────────────────────────────── */
+    function renderPersons() {
+        const n = parseInt(document.getElementById('persons').value) || 1;
+        document.getElementById('persons-preview').textContent =
+            n === 1 ? 'Pour 1 personne' : `Pour ${n} personnes`;
+    }
+
+    /* ── Render summary ─────────────────────────────── */
+    function renderSummary() {
+        const total = totalMl();
+        const persons = parseInt(document.getElementById('persons').value) || 1;
+        document.getElementById('recipe-summary').textContent =
+            total > 0
+                ? `Total : ${total.toFixed(0)} ml · ${(total / persons).toFixed(0)} ml / personne`
+                : '';
+    }
+
+    /* ── Full re-render ─────────────────────────────── */
+    function update() {
+        renderShaker();
+        renderWarning();
+        renderSummary();
+    }
+
+    /* ── Add ingredient row ─────────────────────────── */
+    function addIngredientRow(ingredientId = '', amount = '', unit = 'cl') {
+        const id = Date.now();
+        rows.push({ id, ingredientId, amount, unit });
+        renderRows();
+    }
+
+    /* ── Remove ingredient row ───────────────────────── */
+    function removeRow(id) {
+        rows = rows.filter(r => r.id !== id);
+        renderRows();
+    }
+
+    /* ── Sync row data from DOM ──────────────────────── */
+    function syncRow(id, field, value) {
+        const row = rows.find(r => r.id === id);
+        if (row) row[field] = value;
+        update();
+    }
+
+    /* ── Render all rows ─────────────────────────────── */
+    function renderRows() {
+        const container = document.getElementById('ingredients-container');
+        container.innerHTML = '';
+
+        rows.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'ingredient-row';
+            div.dataset.rowId = r.id;
+
+            // Build ingredient options
+            const ingOptions = INGREDIENTS.map(i =>
+                `<option value="${i.id}" ${i.id == r.ingredientId ? 'selected' : ''}>${i.nom}</option>`
+            ).join('');
+
+            // Build unit options
+            const unitOptions = Object.entries(UNIT_LABELS).map(([k, v]) =>
+                `<option value="${k}" ${k === r.unit ? 'selected' : ''}>${v}</option>`
+            ).join('');
+
+            div.innerHTML = `
+      <label style="margin:0">
+        Ingrédient
+        <select name="ingredient_id[]" onchange="syncRow(${r.id}, 'ingredientId', this.value)" required>
+          <option value="" disabled ${!r.ingredientId ? 'selected' : ''}>Choisir…</option>
+          ${ingOptions}
+        </select>
+      </label>
+      <label style="margin:0">
+        Quantité
+        <input
+          type="number"
+          name="amount[]"
+          min="0"
+          step="1"
+          value="${r.amount}"
+          placeholder="0"
+          style="width:90px"
+          onchange="syncRow(${r.id}, 'amount', this.value)"
+          oninput="syncRow(${r.id}, 'amount', this.value)"
+        >
+      </label>
+      <label style="margin:0">
+        Unité
+        <select class="unit-select" name="unit[]" onchange="syncRow(${r.id}, 'unit', this.value)">
+          ${unitOptions}
+        </select>
+      </label>
+      <button type="button" class="remove-btn" onclick="removeRow(${r.id})" title="Supprimer">✕</button>
+    `;
+
+            container.appendChild(div);
+        });
+
+        update();
+    }
+
+    /* ── Hidden ml fields before submit ─────────────── */
+    function prepareSubmit() {
+        // Remove old hidden fields
+        document.querySelectorAll('.hidden-ml').forEach(el => el.remove());
+        const form = document.getElementById('recipe-form');
+        rows.forEach(r => {
+            const ml = toMl(r.amount, r.unit);
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.className = 'hidden-ml';
+            input.name = 'amount_ml[]';
+            input.value = ml.toFixed(2);
+            form.appendChild(input);
+        });
+        return true;
+    }
+
+    /* ── Init ─────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', () => {
+        renderName();
+        renderPersons();
+        addIngredientRow();
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<hgroup>
+    <h2>Créer une Recette</h2>
+    <p>Composez votre cocktail en sélectionnant les ingrédients enregistrés.</p>
+</hgroup>
+
+<div class="grid">
+
+    <!-- ── LEFT: Shaker Preview ── -->
+    <svg width="0" height="0" style="position:absolute" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <clipPath id="myClip" clipPathUnits="objectBoundingBox"
+                      transform="scale(0.003623, 0.001280)">
+                <path d="M225.657 759.002C224.824 766.002 206.057 780.002 137.657 780.002C69.257 780.002 50.4903 766.002 49.657 759.002C49.657 759.002 12.3267 518.502 9.15698 467.502C3.3309 373.761 9.15698 227.002 9.15698 227.002L0.656982 216.002L9.15698 207.002C27.657 191.002 32.157 167.502 35.157 150.502C35.157 139.002 62.157 116.502 75.657 110.002C85.257 102.802 81.9903 95.1682 80.157 92.0015L85.157 22.0015C85.157 11.5016 97.657 4.00159 106.157 3.00159L137.657 0.501587L169.157 3.00159C177.657 4.00159 190.157 11.5016 190.157 22.0015L195.157 92.0015C193.324 95.1682 190.057 102.802 199.657 110.002C213.157 116.502 240.157 139.002 240.157 150.502C243.157 167.502 247.657 191.002 266.157 207.002L274.657 216.002L266.157 227.002C266.157 227.002 271.983 373.761 266.157 467.502C262.987 518.502 225.657 759.002 225.657 759.002Z"/>
+            </clipPath>
+        </defs>
+    </svg>
+    <div>
+        <div class="shaker-wrap">
+
+            <!-- SVG Shaker shape -->
+            <div class="shaker-outer">
+                <img class="shaker-svg" src="/static/shaker.svg">
+
+                <!-- Liquid layers go here -->
+                <div class="shaker-liquid-container" id="shaker-liquid-container">
+                    <div class="shaker-empty-msg" id="shaker-empty-msg">
+                        Ajoutez<br>des ingrédients
+                    </div>
+                </div>
+            </div>
+
+            <div class="cocktail-name-preview" id="cocktail-name-preview">—</div>
+            <div class="persons-preview" id="persons-preview">Pour 1 personne</div>
+
+            <div class="alcohol-warning" id="alcohol-warning" role="alert">
+                🍸 Ce cocktail contient de l'alcool. À consommer avec modération.
+            </div>
+
+            <small class="recipe-summary" id="recipe-summary"></small>
+        </div>
+    </div>
+
+    <!-- ── RIGHT: Form ── -->
+    <div>
+        <form id="recipe-form" method="post" onsubmit="return prepareSubmit()">
+
+            <fieldset>
+                <legend>Informations</legend>
+
+                <label>
+                    Nom du cocktail
+                    <input
+                            id="cocktail-name"
+                            name="name"
+                            placeholder="Ex : Mojito Tropical"
+                            maxlength="32"
+                            required
+                            oninput="renderName()"
+                    >
+                </label>
+
+                <label>
+                    Pour combien de personnes ?
+                    <input
+                            id="persons"
+                            name="persons"
+                            type="number"
+                            min="1"
+                            max="50"
+                            value="1"
+                            oninput="renderPersons(); renderSummary()"
+                    >
+                </label>
+
+                <label>
+                    Description ou instructions supplémentaire
+                    <textarea
+                            id="description"
+                            name="description"
+                            placeholder="Ex: Ne pas oublier de touiller !"
+                            maxlength="2048"
+                    ></textarea>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Ingrédients</legend>
+
+                <div id="ingredients-container"></div>
+
+                <button
+                        type="button"
+                        class="secondary outline"
+                        onclick="addIngredientRow()"
+                        style="width:100%"
+                >
+                    + Ajouter un ingrédient
+                </button>
+            </fieldset>
+
+            <input type="submit" value="Enregistrer la recette">
+        </form>
+    </div>
+
+</div>
+{% endblock %}

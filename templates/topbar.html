@@ -1,7 +1,25 @@
 <div class="pico-background-red-550">
 <nav class="container">
   <ul>
-    <li title="Drink Or Not" class="pico-color-red-50"><strong>Drink||!</strong></li>
+    <li title="Drink Or Not" class="pico-color-red-50"><a href="/" class="pico-color-red-50"><strong>Drink||!</strong></a></li>
   </ul>
 </nav>
 </div>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="pico-background-red-50" id="notification">
+  <nav class="container">
+    <ul>
+      <li>
+      {% for message in messages %}
+        {{ message }}
+      {% endfor %}
+      </li>
+    </ul>
+    <ul>
+      <li><a href="#" class="contrast" onclick="document.getElementById('notification').remove()">Fermer</a></li>
+    </ul>
+  </nav>
+</div>
+{% endif %}
+{% endwith %}

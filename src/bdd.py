@@ -25,7 +25,8 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recettes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nom TEXT NOT NULL
+            nom TEXT NOT NULL,
+            description TEXT
         )
     """)
     #création table reliant recette et ingrédient
@@ -33,9 +34,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS recettes_ingredient (
             recette_id INTEGER NOT NULL,
             ingredient_id INTEGER NOT NULL,
+            dosage INTEGER NOT NULL,
             PRIMARY KEY (recette_id, ingredient_id),
             FOREIGN KEY (recette_id) REFERENCES recettes(id),
-            FOREIGN KEY (ingredient_id) REFERENCES ingredient(id)
+            FOREIGN KEY (ingredient_id) REFERENCES ingredients(id)
         )
     """)
 
@@ -51,17 +53,31 @@ def ajouter_ingredient(nom, couleur1, couleur2, alcool):
     connect.commit()
     connect.close()
     
-def ajouter_recette(nom, liste_ingredients):
+def ajouter_recette(nom: str,
+                    description: str,
+                    liste_ingredients: list[dict[str, int]]):
+    if len(nom) > 32 or (description and len(description) > 2048):
+        raise Exception("Description ou nom trop long")
     connect=db_connection()
     cursor=connect.cursor()
     cursor.execute(
-        "INSERT INTO recettes(nom) VALUES (?)",(nom,)
+        "INSERT INTO recettes(nom, description) VALUES (?, ?)",(nom, description,)
         )
-    #on récupère l'id de la recette créé
+    #on récupère l'id de la recette créée
     recette_id=cursor.lastrowid
-    for ingredient_id in liste_ingredients:
+    for ingredient in liste_ingredients:
         cursor.execute(
-            "INSERT INTO recettes_ingredient (recette_id, ingredient_id) VALUES (?,?)", (recette_id, ingredient_id)
+            "INSERT INTO recettes_ingredient (recette_id, ingredient_id, dosage) VALUES (?,?,?)", (recette_id, ingredient["id"], ingredient["dosage"] )
             )
     connect.commit()
     connect.close()
+
+def recuperer_ingredients():
+    connect=db_connection()
+    cursor=connect.cursor()
+    ingredients = cursor.execute(
+        "SELECT id, nom, couleur1, couleur2, alcool FROM ingredients"
+    )
+    ingredients = ingredients.fetchall()
+    connect.close()
+    return [dict(row) for row in ingredients]
