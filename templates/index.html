@@ -2,6 +2,42 @@
 
 {% block title %}Home{% endblock %}
 {% block content %}Welcome to Drink||!<br><br><br>
+<style>
+/* Conteneur en haut de page */
+.search-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1rem 1.5rem;
+}
+
+/* La barre de recherche elle-même */
+input[aria-label="Rechercher…"],
+input[type="search"],
+.search-input {
+  width: 100%;
+  max-width: 600px;
+  padding: 0.75rem 1rem;
+  font-size: 1.25rem;           /* Grande taille */
+  border: 2px solid #b03d10;   /* Bordure toujours visible */
+  border-radius: 0.5rem;
+  outline: none;                /* On désactive l'outline par défaut... */
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+/* Au focus : bordure plus marquée */
+input[aria-label="Rechercher…"]:focus {
+  border-color: #8b3a05;
+  box-shadow: 0 0 0 3px rgba(111, 39, 1, 0.2);
+}
+</style>
+<div class="search-container">
+  <input
+    type="search"
+    aria-label="Rechercher…"
+    class="search-input"
+    placeholder="Recherche..."
+  >
+</div>
 ⚠️ En développement:
 <ul>
     <li><a href="/ingredient">Ajouter un ingrédient</a></li>
