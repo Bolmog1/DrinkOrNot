@@ -81,3 +81,26 @@ def recuperer_ingredients():
     ingredients = ingredients.fetchall()
     connect.close()
     return [dict(row) for row in ingredients]
+
+def recuperer_ingredients_recettes(recette_id: int):
+    connect=db_connection()
+    cursor=connect.cursor()
+    ingredients = cursor.execute(
+        "SELECT nom, dosage, couleur1, couleur2, ALCOOL FROM recettes_ingredient JOIN ingredients ON ingredients.id == ingredient_id WHERE recette_id = ?", (recette_id,)
+    )
+    ingredients = ingredients.fetchall()
+    connect.close()
+    return [dict(i) for i in ingredients]
+
+def rechercher_recettes(recherche: str):
+    connect=db_connection()
+    cursor=connect.cursor()
+    recettes_id = cursor.execute(
+        "SELECT id, nom, description FROM recettes WHERE nom LIKE ? LIMIT 20", (f"{recherche}%",)
+    )
+    recettes = recettes_id.fetchall()
+    connect.close()
+    recettes = [dict(r) for r in recettes]
+    for recette in recettes:
+        recette["ingredient"] = recuperer_ingredients_recettes(recette["id"])
+    return recettes
