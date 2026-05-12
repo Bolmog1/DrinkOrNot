@@ -30,3 +30,16 @@ def recette():
         request_add_recette()
         return redirect(url_for("recette"))
     return None
+
+@app.route("/recherche", methods=["GET"])
+def recherche():
+    query = request.args.get('q', '')
+    recettes = rechercher_recettes(query)
+    print(recettes)
+    return render_template("recherche.html", recettes=recettes, query=query)
+
+@app.route("/recette/<id>", methods=["GET"])
+def recette_by_id(id: int):
+    recette = recuperer_recettes(id)[0]
+    ingredients = recuperer_ingredients_recettes(id)
+    return render_template("preview.html", recette=recette, ingredients=ingredients)

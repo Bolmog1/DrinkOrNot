@@ -92,6 +92,16 @@ def recuperer_ingredients_recettes(recette_id: int):
     connect.close()
     return [dict(i) for i in ingredients]
 
+def recuperer_recettes(recette_id: int):
+    connect=db_connection()
+    cursor=connect.cursor()
+    recettes = cursor.execute(
+        "SELECT id, nom, description FROM recettes WHERE id = ?", (recette_id, )
+    )
+    recettes = recettes.fetchall()
+    connect.close()
+    return recettes
+
 def rechercher_recettes(recherche: str):
     connect=db_connection()
     cursor=connect.cursor()
@@ -102,5 +112,5 @@ def rechercher_recettes(recherche: str):
     connect.close()
     recettes = [dict(r) for r in recettes]
     for recette in recettes:
-        recette["ingredient"] = recuperer_ingredients_recettes(recette["id"])
+        recette["ingredients"] = recuperer_ingredients_recettes(recette["id"])
     return recettes
