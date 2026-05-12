@@ -1,0 +1,58 @@
+<style>
+    @keyframes deffile {
+        0%   { transform: translate3d(100%, 0, 0); }
+        100% { transform: translate3d(-50%, 0, 0); }
+    }
+    .avertissement {
+        width: 100%;
+        position: sticky;
+        position: -webkit-sticky;
+        bottom: 0;
+        right: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+    .deffilement-wrapper {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+    }
+    .deffilement {
+        white-space: nowrap;
+        animation: deffile 20s linear infinite;
+        display: block;
+    }
+    .avertissement > a {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    .fermer_avertissement {
+        padding: 12px 16px;
+        margin: 0;
+    }
+    .en-savoir-plus {
+        padding: 8px 12px;
+    }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+        if (!sessionStorage.getItem("avertissement")) {
+            document.getElementById("avertissement").style.display = "flex";
+        }
+    });
+    function fermer_avertissement() {
+        sessionStorage.setItem('avertissement', '1');
+        document.getElementById("avertissement").style.display = "none";
+    }
+</script>
+
+<div class="avertissement pico-background-yellow-100" id="avertissement" style="display: none">
+    <a href="#" class="en-savoir-plus">En savoir plus</a>
+    <div class="deffilement-wrapper">
+        <span class="deffilement"> \ \ \ L'abus d'alcool est dangereux pour la santé, à consommer avec modération \ \ \ </span>
+    </div>
+    <a href="#" class="fermer_avertissement" onclick="fermer_avertissement()">✕</a>
+</div>
