@@ -106,7 +106,7 @@ def recuperer_recettes(recette_id: int):
     connect=db_connection()
     cursor=connect.cursor()
     recettes = cursor.execute(
-        "SELECT id, nom, description FROM recettes WHERE id = ?", (recette_id, )
+        "SELECT id, nom, description, alcool FROM recettes WHERE id = ?", (recette_id, )
     )
     recettes = recettes.fetchall()
     connect.close()
