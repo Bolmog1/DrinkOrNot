@@ -8,6 +8,8 @@ app.config.update(
     SECRET_KEY='192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf'
 )
 
+init_db()
+
 @app.route("/")
 def hello_world():
     return render_template("index.html")
@@ -34,7 +36,8 @@ def recette():
 @app.route("/recherche", methods=["GET"])
 def recherche():
     query = request.args.get('q', '')
-    recettes = rechercher_recettes(query)
+    avec_alcool=request.args.get("alcool")=="on"
+    recettes = rechercher_recettes(query, avec_alcool)
     print(recettes)
     return render_template("recherche.html", recettes=recettes, query=query)
 
