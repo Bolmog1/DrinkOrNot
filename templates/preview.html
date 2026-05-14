@@ -39,7 +39,25 @@
 </style>
 {% endblock %}
 
-{% block script %}{% endblock %}
+{% block script %}
+<script>
+const shareData = {
+    url: window.location.href,
+};
+
+document.addEventListener("DOMContentLoaded", (event) => {
+    const btn = document.getElementById("partage");
+
+    btn.addEventListener("click", async () => {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            console.log(`Error: ${err}`);
+        }
+    });
+});
+</script>
+{% endblock %}
 
 {% block content %}
 <svg width="0" height="0" style="position:absolute" xmlns="http://www.w3.org/2000/svg">
@@ -65,6 +83,9 @@
 </div>
     <div>
         <h1>{{ recette['nom'] }}</h1>
+        {% if recette['alcool']%}
+        <p>Contient de l'alcool</p>
+        {% endif%}
         <p><strong>Ingrédients</strong></p>
         {{ recette['ingredients'] }}
         <ul>
@@ -74,6 +95,7 @@
         </ul>
         <p><strong>Description/Instructions</strong></p>
         <p style="white-space: pre-line">{{ recette['description'] }}</p>
+        <button id="partage">Partager la recette</button>
     </div>
 </div>
 {% endblock %}

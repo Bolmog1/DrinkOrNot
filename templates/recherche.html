@@ -62,7 +62,7 @@
     {% include 'searchbar.html' %}
     <h2>Résultats pour : {{query}}</h2>
     {% for recette in recettes %}
-    <a href="/recette/{{ recette['id'] }}" style="text-decoration : none;">
+    <a href="/recette/{{ recette['id'] }}" class="pico-color" style="text-decoration : none">
     <div class="recette-container">
             <div class="recette-preview">
                 <div class="shaker">
@@ -77,10 +77,13 @@
             </div>
             <div style="min-width: 0;">
                 <h2><strong>{{ recette["nom"] }}</strong></h2>
+                {% if recette["nom"] %}
+                    <p>Contient de l'alcool.</p>
+                {% endif %}
                 <p class="one_line">{{ recette["description"] }}</p>
             </div>
     </div>
-        </a>
+    </a>
     <hr>
     {% endfor %}
 </div>
