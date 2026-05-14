@@ -29,7 +29,7 @@ def request_add_recette() -> None:
         for i in range(0, len(ingredients_id))
     ]
     try:
-        ajouter_recette(nom, desc, ingredients)
+        ajouter_recette(nom, desc, ingredients,nb_persons)
     except Exception as e:
         flash(f"Erreur ajout de la recette: {e}", "danger")
         return

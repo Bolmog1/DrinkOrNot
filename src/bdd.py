@@ -26,7 +26,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS recettes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nom TEXT NOT NULL,
-            description TEXT
+            description TEXT,
+            alcool BOOLEAN,
+            recette_original_id INT,
+            nb_personne INT
         )
     """)
     #création table reliant recette et ingrédient
@@ -55,13 +58,20 @@ def ajouter_ingredient(nom, couleur1, couleur2, alcool):
     
 def ajouter_recette(nom: str,
                     description: str,
-                    liste_ingredients: list[dict[str, int]]):
+                    liste_ingredients: list[dict[str, int]],
+                    nb_personne:int):
     if len(nom) > 32 or (description and len(description) > 2048):
         raise Exception("Description ou nom trop long")
     connect=db_connection()
     cursor=connect.cursor()
+    Alcool = False
+    for ingredient in liste_ingredients:
+        resultat = cursor.execute("SELECT alcool FROM ingredients WHERE id = ? AND alcool != 0", (ingredient["id"],)).fetchone()
+        if resultat:
+            Alcool = True
+            break  #si un ingrédient contient de l'alcool, la recette en contient aussi
     cursor.execute(
-        "INSERT INTO recettes(nom, description) VALUES (?, ?)",(nom, description,)
+        "INSERT INTO recettes(nom, description,nb_personne,alcool) VALUES (?, ?,?,?)",(nom, description,nb_personne,int(Alcool))
         )
     #on récupère l'id de la recette créée
     recette_id=cursor.lastrowid
@@ -102,12 +112,17 @@ def recuperer_recettes(recette_id: int):
     connect.close()
     return recettes
 
-def rechercher_recettes(recherche: str):
+def rechercher_recettes(recherche: str, avec_alcool:bool):
     connect=db_connection()
     cursor=connect.cursor()
-    recettes_id = cursor.execute(
-        "SELECT id, nom, description FROM recettes WHERE nom LIKE ? LIMIT 20", (f"{recherche}%",)
-    )
+    if avec_alcool:
+        recettes_id = cursor.execute(
+            "SELECT id, nom, description, alcool FROM recettes WHERE nom LIKE ? LIMIT 20", (f"{recherche}%",)
+        )
+    else:
+        recettes_id = cursor.execute(
+            "SELECT id, nom, description, alcool FROM recettes WHERE nom LIKE ? AND alcool=0 LIMIT 20", (f"{recherche}%",)
+        )
     recettes = recettes_id.fetchall()
     connect.close()
     recettes = [dict(r) for r in recettes]
