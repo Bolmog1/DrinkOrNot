@@ -59,7 +59,8 @@ def ajouter_ingredient(nom, couleur1, couleur2, alcool):
 def ajouter_recette(nom: str,
                     description: str,
                     liste_ingredients: list[dict[str, int]],
-                    nb_personne:int):
+                    nb_personne:int,
+                    recette_original_id: int = None): #paramètre non obligatoire, si il n'est pas là il vaut None
     if len(nom) > 32 or (description and len(description) > 2048):
         raise Exception("Description ou nom trop long")
     connect=db_connection()
@@ -71,7 +72,8 @@ def ajouter_recette(nom: str,
             Alcool = True
             break  #si un ingrédient contient de l'alcool, la recette en contient aussi
     cursor.execute(
-        "INSERT INTO recettes(nom, description,nb_personne,alcool) VALUES (?, ?,?,?)",(nom, description,nb_personne,int(Alcool))
+        #ajoit de la recette avec alcool et recette originale si il y en a une
+        "INSERT INTO recettes(nom, description,nb_personne,alcool,recette_original_id) VALUES (?, ?,?, ?,?)",(nom, description,nb_personne,int(Alcool), recette_original_id)
         )
     #on récupère l'id de la recette créée
     recette_id=cursor.lastrowid
@@ -106,7 +108,17 @@ def recuperer_recettes(recette_id: int):
     connect=db_connection()
     cursor=connect.cursor()
     recettes = cursor.execute(
-        "SELECT id, nom, description, alcool FROM recettes WHERE id = ?", (recette_id, )
+        "SELECT id, nom, description FROM recettes WHERE id = ?", (recette_id, )
+    )
+    recettes = recettes.fetchall()
+    connect.close()
+    return recettes
+
+def recupere_remixes(recette_id: int):
+    connect=db_connection()
+    cursor=connect.cursor()
+    recettes = cursor.execute(
+        "SELECT id, nom, description FROM recettes WHERE recette_original_id = ?", (recette_id, )
     )
     recettes = recettes.fetchall()
     connect.close()
@@ -115,6 +127,7 @@ def recuperer_recettes(recette_id: int):
 def rechercher_recettes(recherche: str, avec_alcool:bool):
     connect=db_connection()
     cursor=connect.cursor()
+    #filtre
     if avec_alcool:
         recettes_id = cursor.execute(
             "SELECT id, nom, description, alcool FROM recettes WHERE nom LIKE ? LIMIT 20", (f"{recherche}%",)
@@ -129,3 +142,4 @@ def rechercher_recettes(recherche: str, avec_alcool:bool):
     for recette in recettes:
         recette["ingredients"] = recuperer_ingredients_recettes(recette["id"])
     return recettes
+
