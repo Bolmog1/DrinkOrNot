@@ -27,7 +27,12 @@ def ingredient():
 def recette():
     if request.method == 'GET':
         ingredients = recuperer_ingredients()
-        return render_template("recette.html", ingredients=ingredients)
+        remix = request.args.get('remix', None, int)
+        recette = None
+        if remix:
+            recette = dict(recuperer_recettes(remix)[0])
+            recette["ingredients"] = recuperer_ingredients_recettes(remix)
+        return render_template("recette.html", ingredients=ingredients, recette=recette)
     elif request.method == 'POST':
         request_add_recette()
         return redirect(url_for("recette"))

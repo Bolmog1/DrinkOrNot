@@ -96,7 +96,7 @@ def recuperer_ingredients_recettes(recette_id: int):
     connect=db_connection()
     cursor=connect.cursor()
     ingredients = cursor.execute(
-        "SELECT nom, dosage, couleur1, couleur2, ALCOOL FROM recettes_ingredient JOIN ingredients ON ingredients.id == ingredient_id WHERE recette_id = ?", (recette_id,)
+        "SELECT nom, id, dosage, couleur1, couleur2, ALCOOL FROM recettes_ingredient JOIN ingredients ON ingredients.id == ingredient_id WHERE recette_id = ?", (recette_id,)
     )
     ingredients = ingredients.fetchall()
     connect.close()
