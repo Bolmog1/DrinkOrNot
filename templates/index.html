@@ -1,11 +1,18 @@
 {% extends 'base.html' %}
 
 {% block title %}Home{% endblock %}
+{% block style %}
+<style>
+    .welcome {
+        margin: 2em;
+    }
+</style>
+{% endblock %}
 
-{% block content %}Welcome to Drink||!<br><br><br>
+{% block content %}
+<hgroup class="welcome">
+    <h1>Bienvenue sur Drink||!</h1>
+    <p>Partagez vos recettes de cocktail et découvrez votre prochaine boisson préférée !</p>
+</hgroup>
 {% include 'searchbar.html' %}
-⚠️ En développement:
-<ul>
-    <li><a href="/ingredient">Ajouter un ingrédient</a></li>
-    <li><a href="/recette">Ajouter une recette</a></li>
-</ul>{% endblock %}
+{% endblock %}

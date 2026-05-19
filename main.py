@@ -1,6 +1,7 @@
-from flask import Flask, request, render_template, url_for, redirect
+from flask import Flask, request, render_template, url_for, redirect, send_from_directory
 from src.controller import *
 from src.bdd import *
+from os import path
 
 app = Flask(__name__)
 app.config.update(
@@ -13,6 +14,11 @@ init_db()
 @app.route("/")
 def hello_world():
     return render_template("index.html")
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route("/ingredient", methods=["GET", "POST"])
 def ingredient():
@@ -44,7 +50,7 @@ def recherche():
     avec_alcool=request.args.get("alcool")=="on"
     recettes = rechercher_recettes(query, avec_alcool)
     print(recettes)
-    return render_template("recherche.html", recettes=recettes, query=query)
+    return render_template("recherche.html", recettes=recettes, query=query, alcool=avec_alcool)
 
 @app.route("/recette/<id>", methods=["GET"])
 def recette_by_id(id: int):
