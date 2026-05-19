@@ -392,11 +392,20 @@
         });
         return true;
     }
+    function addRemixIngredient() {
+        // {% if recette %}
+            // {% for ingredient in recette['ingredients'] %}
+            addIngredientRow({{ ingredient['id']}}, {{ ingredient['dosage']}}, "ml")
+            // {% endfor %}
+        // {% endif%}
+    }
+
 
     /* ── Init ─────────────────────────────────────────── */
     document.addEventListener('DOMContentLoaded', () => {
         renderName();
         renderPersons();
+        addRemixIngredient();
         addIngredientRow();
     });
 </script>
@@ -461,6 +470,7 @@
                             maxlength="32"
                             required
                             oninput="renderName()"
+                            value="{{ recette['nom'] }}"
                     >
                 </label>
 
@@ -484,7 +494,7 @@
                             name="description"
                             placeholder="Ex: Ne pas oublier de touiller !"
                             maxlength="2048"
-                    ></textarea>
+                    >{{ recette['description'] }}</textarea>
                 </label>
             </fieldset>
 
@@ -502,6 +512,10 @@
                     + Ajouter un ingrédient
                 </button>
             </fieldset>
+
+            {% if recette %}
+            <input type="hidden" name="remix" value="{{ recette['id'] }}">
+            {% endif %}
 
             <input type="submit" value="Enregistrer la recette">
         </form>

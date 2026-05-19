@@ -95,7 +95,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
         </ul>
         <p><strong>Description/Instructions</strong></p>
         <p style="white-space: pre-line">{{ recette['description'] }}</p>
-        <button id="partage">Partager la recette</button>
+            <a role="button" id="partage">Partager la recette</a>
+            <a role="button" id="remix" href="/recette?remix={{recette['id']}}">Remixer la recette</a>
     </div>
 </div>
 {% endblock %}
